@@ -1,41 +1,6 @@
 
-class entityFactory {
-    constructor() {
-
-    }
-
-    create_pray(count) {
-        let pray_array = [];
-        for (let i = 0; i<count; i++) {
-            pray_array.push(new Entity(
-                random(width), 
-                random(height),
-                'green',
-                180,
-                15))
-        }
-
-        return pray_array;
-    }
-
-    create_pred(count) {
-        let pred_array = [];
-        for (let i = 0; i<count; i++) {
-            pred_array.push(new Entity(
-                random(width), 
-                random(height),
-                'red',
-                90,
-                15))
-        }
-
-        return pred_array;
-    }
-}
-
-
 class Entity {
-    constructor(x, y, color, FOV, FOV_density=1) {
+    constructor(pos, color, fov, fov_dens=1) {
         this.color = color;
         this.width = 10;
 
@@ -43,12 +8,12 @@ class Entity {
         this.max_accel = 0.1;
 
         this.accel = createVector();
-        this.pos = createVector(x,y);
+        this.pos = pos;
         this.vel = createVector(1);
 
         this.rays = [];
-        for (var i = 0; i < FOV; i += FOV_density) {
-            this.rays.push(new Ray(this.pos, radians(i-FOV/2)));
+        for (var i = 0; i < fov; i += fov_dens) {
+            this.rays.push(new Ray(this.pos, radians(i-fov/2)));
         }
 
         this.update_poly();
@@ -69,12 +34,7 @@ class Entity {
     apply_force(vector) {
         let new_velocity = this.vel.copy();
         new_velocity.add(vector.setMag(this.max_accel));
-        if (new_velocity.mag() >= this.max_vel) {
-            new_velocity.setMag(this.max_vel);
-        }
-
-        this.vel = new_velocity;
-        
+        this.vel = new_velocity.limit(this.max_vel);
     }
 
     update(world_objects) {
@@ -89,6 +49,7 @@ class Entity {
 
         //this.position = createVector(mouseX,mouseY);
         
+        // Keeps entity in bounds
         if (this.pos.x > width) {
             this.pos.x = 0;
         }
@@ -105,6 +66,7 @@ class Entity {
     }
 
     update_vision(world_objects) {
+
         let view_intersects = [];
         this.rays.forEach((ray) => {
             let intersect = ray.update(this, this.pos, this.vel, world_objects, true);
@@ -113,7 +75,7 @@ class Entity {
             }
         });
 
-        if (view_intersects.length > 0) {
+        if (view_intersects.length !== 0) {
  
             let min = view_intersects[0];
             view_intersects.forEach((intersect) => {
@@ -140,5 +102,47 @@ class Entity {
             this.width/2, 0
             );
         pop();
+    }
+}
+
+class Pray extends Entity {
+    constructor(pos) {
+        const color = 'green';
+        const fov = 180;
+        const fov_dens = 1;
+        super(pos,color,fov,fov_dens);
+    }
+}
+
+class Pred extends Entity {
+    constructor(pos) {
+        const color = 'red';
+        const fov = 90;
+        const fov_dens = 1;
+        super(pos,color,fov,fov_dens);
+    }
+}
+
+class entityFactory {
+    constructor() {
+
+    }
+
+    create_pray(count) {
+        let pray_array = [];
+        for (let i = 0; i<count; i++) {
+            pray_array.push(new Pray(createVector(random(width/2), random(height/2))));
+        }
+
+        return pray_array;
+    }
+
+    create_pred(count) {
+        let pred_array = [];
+        for (let i = 0; i<count; i++) {
+            pred_array.push(new Pred(createVector(random(width/2), random(height/2))));
+        }
+
+        return pred_array;
     }
 }
