@@ -1,5 +1,5 @@
-const pray_count = 20;
-const pred_count = 20;
+const pray_count = 2;
+const pred_count = 2;
 
 function setup() {
     createCanvas(800, 600);

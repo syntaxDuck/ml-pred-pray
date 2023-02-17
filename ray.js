@@ -55,13 +55,14 @@ class Ray {
         let closest_intersect = null
         // Loop over object types
         for (const [key,] of Object.entries(objects)) {
+
+            // No reason to check for object of type parent
+            if (parent.constructor.name.toLowerCase() === key) continue;
+
             // Loop over all objects of type
             objects[key].forEach((object) => {
-
-                if (object !== parent) {
-                    let object_intersect = this.object_cast(object, x3, y3, x4, y4);
-                    if (object_intersect) intersects.push(object_intersect);
-                }
+                let object_intersect = this.object_cast(object, x3, y3, x4, y4);
+                if (object_intersect) intersects.push(object_intersect);
             })
             
             // Determine closest intersect
@@ -109,9 +110,11 @@ class Ray {
                 pt.y = y1 + t*(y2-y1) - y3;
 
                 // Check that is intersect point is within the magnitude
-                // of the ray vector
+                // of the ray vector, technically don't have to do this
+                // for origin tracing but if we ever want to look at collision
+                // tracing we will need it
                 if (pt.mag() <= this.dir.mag()) {
-                    object_intersects.push(pt);            
+                    object_intersects.push(pt);
                 }
             }
         })
@@ -121,13 +124,17 @@ class Ray {
         if (object_intersects.length === 0) {
             return null
         }
-        
-        // Calculate closes intersect for object
-        let min_intersect = object_intersects[0];
-        object_intersects.forEach((intersect) => {
-            if (min_intersect.mag() > intersect.mag()) min_intersect = intersect; 
-        })
 
-        return min_intersect
+        const rel_obj_pos = object.pos.copy().sub(this.pos);
+        return rel_obj_pos;
+        
+        //NOTE: not needed if not doing collision detection
+        //// Calculate closes intersect for object
+        //let min_intersect = object_intersects[0];
+        //object_intersects.forEach((intersect) => {
+        //    if (min_intersect.mag() > intersect.mag()) min_intersect = intersect; 
+        //})
+//
+        //return min_intersect
     }
 }
