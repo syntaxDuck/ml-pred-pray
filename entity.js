@@ -28,7 +28,7 @@ class Entity extends WorldObject {
 
     apply_force(vector) {
         let target_vect = this._get_vect_rel_pos(vector);
-        this._set_vel(target_vect);
+        this._set_accel(target_vect);
     }
 
     update(world_objects) {
@@ -38,32 +38,66 @@ class Entity extends WorldObject {
         this.show();
     }
 
+    //TODO: think of better naming schema for these movement parameters
+    // feels clunky right now
     update_pos() {
 
         const current_pos = this._get_pos();
+        this._set_vel();
         current_pos.add(this._get_vel())
         this._set_pos(current_pos);
         
         this._check_bounds();
     }
 
-    update_vision(world_objects) {
+    check_for_closest_object(view_objs) {
+        
+        let closest_obj = null;
+        if (view_objs !== {}) {
+            for (const[, array] of Object.entries(view_objs)) {
+                if (closest_obj === null && array.length !== 0) closest_obj = array[0];
+                array.forEach((obj) => {
+                    if (this._get_vect_rel_mag(obj.pos) < this._get_vect_rel_mag(closest_obj.pos)) {
+                        closest_obj = obj;
+                    }
+                })   
+            }
+        }
+        return closest_obj;
+    }
 
-        let view_objs = [];
+    check_for_closest_object_of_type(view_objs, type) {
+
+        let closest_obj = null
+        if (type in view_objs) {
+            const typed_objs = view_objs[type];
+            closest_obj = typed_objs[0];
+            typed_objs.forEach((obj) => {
+                if (this._get_vect_rel_mag(obj.pos) < this._get_vect_rel_mag(closest_obj.pos)) {
+                    closest_obj = obj;
+                }
+            })
+        }
+        return closest_obj;
+    }
+
+    update_vision(world_objects) {
+        let view_objs = {};
         this.rays.forEach((ray) => {
             let obj = ray.update(this,world_objects, true);
-            if (obj) view_objs.push(obj);
+            if (obj) {
+                const obj_type = obj.constructor.name;
+                if (obj_type in view_objs) {
+                    view_objs[obj_type].push(obj);
+                }
+                else {
+                    view_objs[obj_type] = [obj];  
+                }
+            }
         });
 
-        if (view_objs.length === 0) return 
-        let min = view_objs[0];
-        view_objs.forEach((obj) => {
-            if (this._get_vect_rel_mag(obj.pos) < this._get_vect_rel_mag(min.pos)) {
-                min = obj;
-            }
-        })
-        
-        this.apply_force(min._get_pos());
+        const closest_obj = this.check_for_closest_object_of_type(view_objs, "Food");
+        if (closest_obj) this.apply_force(closest_obj._get_pos());
     }
 
     show() {
