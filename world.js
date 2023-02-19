@@ -25,7 +25,7 @@ class World {
     }
     
     create_food() {
-        let food_count = 8;
+        let food_count = 10;
         let world_food = [];
 
         for(let i = 0; i < food_count; i++) {
@@ -75,17 +75,20 @@ class WorldObject {
         return this.vel.copy();
     }
 
-    _set_vel(vector) {
-        const c_vector = vector.copy();
-        const velocity = this._get_vel();
-
-        velocity.add(c_vector.setMag(this.max_accel));
-        velocity.limit(this.max_vel);
-        this.vel = velocity;
+    _set_vel() {
+        this.vel.add(this.accel);
+        this.vel.limit(this.max_vel);
     }
 
     _get_accel() {
         return this.accel.copy();
+    }
+
+    _set_accel(desired_vect) {
+        const d_vect = desired_vect.copy();
+
+        this.accel = d_vect.sub(this.vel);
+        this.accel.limit(this.max_accel);
     }
 
     _get_vect_rel_pos(vector) {
