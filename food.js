@@ -1,9 +1,8 @@
-class Food {
-    constructor(pos) {
-        this.pos = pos;
-        this.vert_length = 10;
-        this.poly = [[]];
 
+class Food extends WorldObject {
+    constructor(pos) {
+        super('red', pos);
+        this.vert_length = 10;
         this.create_polys();
     }
 
@@ -31,11 +30,14 @@ class Food {
     }
 
     show() {
+
+        const current_pos = this._get_pos();
+
         rectMode(CENTER);
-        fill('red');
-        stroke('red');
+        fill(this.color);
+        stroke(this.color);
         push();
-        translate(this.pos.x, this.pos.y);
+        translate(current_pos.x, current_pos.y);
         rect(0,0,this.vert_length,this.vert_length);
         pop();
     }

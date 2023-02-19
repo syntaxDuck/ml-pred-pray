@@ -1,42 +1,51 @@
-class Ray {
-    constructor(pos, angle) {
+class Ray extends WorldObject{
+    constructor(pos, angle, length=300) {
+        const dir = p5.Vector.fromAngle(angle).setMag(length)
+        super("white", pos, dir)
         this.angle = angle;
-        this.pos = pos;
-        this.dir = p5.Vector.fromAngle(angle).setMag(300);
     }
 
-
-    update(parent, pos, velocity, objects, show=false) {
+    update(parent, objects, show=false) {
 
         // Keeps rays position tied to the source vehicles position
-        this.pos = pos;
-        // Rotate ray by relative velocity angle
-        this.dir.setHeading(this.angle + velocity.heading());
+        this._set_pos(parent.pos);
+        // Rotate ray by parent relative velocity angle
+        this._set_dir(this.angle + parent.vel.heading());
 
         // Ray intersect relative to the position of the rays origin
-        let rel_intersect = this.cast(parent, objects);
+        let obj_intersected = this.cast(parent, objects);
 
-        if (show) this.show(rel_intersect);
+        if (show) this.show(obj_intersected);
 
-        return rel_intersect;
+        return obj_intersected;
     }
 
-    show(intersect) {
-        stroke(255, 255, 255, 50);
+    show(obj_intersected) {
+        stroke(this.color);
         push();
-
         // Set drawing origin to ray pos
         // this is why when drawing the line we start at 0,0
         translate(this.pos.x, this.pos.y);
-
-        if (intersect) {
-            line(0, 0, intersect.x, intersect.y);
+        if (obj_intersected) {
+            const obj_vect = obj_intersected._get_pos().sub(this.pos)
+            line(0, 0, obj_vect.x, obj_vect.y);
         }
         else {
             line(0, 0, this.dir.x, this.dir.y);
         }
-
         pop();
+    }
+
+    compare_obj_pos(current_obj, check_obj) {
+        let current_obj_vect = current_obj._get_pos();
+        let current_obj_mag = this._get_vect_rel_mag(current_obj_vect);
+
+        let check_obj_vect = check_obj._get_pos();
+        let check_obj_mag = this._get_vect_rel_mag(check_obj_vect);
+
+        if (current_obj_mag > check_obj_mag) {
+            return check_obj;
+        }
     }
 
     // Returns a vector of the closes object relative to the ray's origin
@@ -50,33 +59,34 @@ class Ray {
         const x4 = this.pos.x + this.dir.x;
         const y4 = this.pos.y + this.dir.y;
         
-        let intersects = [];
-
-        let closest_intersect = null
         // Loop over object types
+        let intersected_objs = [];
+
+        let closest_obj = null
         for (const [key,] of Object.entries(objects)) {
-
+            
             // No reason to check for object of type parent
-            if (parent.constructor.name.toLowerCase() === key) continue;
-
+            //if (parent.constructor.name.toLowerCase() === key) continue;
+            
             // Loop over all objects of type
             objects[key].forEach((object) => {
-                let object_intersect = this.object_cast(object, x3, y3, x4, y4);
-                if (object_intersect) intersects.push(object_intersect);
-            })
-            
-            // Determine closest intersect
-            
-            if (closest_intersect == null) closest_intersect = intersects[0];
-            intersects.forEach((intersect) => {
-                if (closest_intersect.mag() > intersect.mag()) {
-                    closest_intersect = intersect;
-                }
-            })
-            
-        }
 
-        return closest_intersect;
+                if (object === parent) return;
+
+                let intersected_obj = this.object_cast(object, x3, y3, x4, y4);
+                if (intersected_obj) intersected_objs.push(intersected_obj);
+            })
+            
+            if (intersected_objs.length === 0) continue;
+
+            if (closest_obj === null) {
+                closest_obj = intersected_objs[0];
+            }
+            intersected_objs.forEach((obj) => {
+                if (this.compare_obj_pos(closest_obj, obj)) closest_obj = obj;
+            })
+        }
+        return closest_obj;
     }
 
     object_cast(object, x3, y3, x4, y4){
@@ -125,8 +135,7 @@ class Ray {
             return null
         }
 
-        const rel_obj_pos = object.pos.copy().sub(this.pos);
-        return rel_obj_pos;
+        return object;
         
         //NOTE: not needed if not doing collision detection
         //// Calculate closes intersect for object

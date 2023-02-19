@@ -1,15 +1,9 @@
 
-class Entity {
+class Entity extends WorldObject {
     constructor(pos, color, fov, fov_dens=1) {
-        this.color = color;
+        super(color, pos, null, createVector(1), createVector(), 2, 0.1)
+        
         this.width = 10;
-
-        this.max_vel = 2;
-        this.max_accel = 0.1;
-
-        this.accel = createVector();
-        this.pos = pos;
-        this.vel = createVector(1);
 
         this.rays = [];
         for (var i = 0; i < fov; i += fov_dens) {
@@ -20,6 +14,7 @@ class Entity {
     }
 
     update_poly() {
+
         const p1 = createVector(-this.width + this.pos.x, -this.width/2 + this.pos.y);
         const p2 = createVector(this.width/2 + this.pos.x, 0 + this.pos.y)
         const p3 = createVector(-this.width + this.pos.x, this.width/2 + this.pos.y);
@@ -32,9 +27,8 @@ class Entity {
     }
 
     apply_force(vector) {
-        let new_velocity = this.vel.copy();
-        new_velocity.add(vector.setMag(this.max_accel));
-        this.vel = new_velocity.limit(this.max_vel);
+        let target_vect = this._get_vect_rel_pos(vector);
+        this._set_vel(target_vect);
     }
 
     update(world_objects) {
@@ -45,53 +39,35 @@ class Entity {
     }
 
     update_pos() {
-        this.pos.add(this.vel);
 
-        //this.position = createVector(mouseX,mouseY);
+        const current_pos = this._get_pos();
+        current_pos.add(this._get_vel())
+        this._set_pos(current_pos);
         
-        // Keeps entity in bounds
-        if (this.pos.x > width) {
-            this.pos.x = 0;
-        }
-        else if (this.pos.x < 0) {
-            this.pos.x = width;
-        }
-
-        if (this.pos.y > height) {
-            this.pos.y = 0;
-        }
-        else if (this.pos.y < 0) {
-            this.pos.y = height;
-        }
+        this._check_bounds();
     }
 
     update_vision(world_objects) {
 
-        let view_intersects = [];
+        let view_objs = [];
         this.rays.forEach((ray) => {
-            let intersect = ray.update(this, this.pos, this.vel, world_objects, true);
-            if (intersect) {
-                view_intersects.push(intersect);
-            }
+            let obj = ray.update(this,world_objects, true);
+            if (obj) view_objs.push(obj);
         });
 
-        if (view_intersects.length !== 0) {
- 
-            let min = view_intersects[0];
-            view_intersects.forEach((intersect) => {
-                if (intersect.mag() < min.mag()) {
-                    min = intersect
-                }
-            })
- 
-            this.apply_force(min)
-        }
-         
+        if (view_objs.length === 0) return 
+        let min = view_objs[0];
+        view_objs.forEach((obj) => {
+            if (this._get_vect_rel_mag(obj.pos) < this._get_vect_rel_mag(min.pos)) {
+                min = obj;
+            }
+        })
+        
+        this.apply_force(min._get_pos());
     }
 
     show() {
         noStroke();
-        stroke(this.color)
         fill(this.color);
         push();
         translate(this.pos.x, this.pos.y);
