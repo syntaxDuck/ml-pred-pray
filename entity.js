@@ -4,6 +4,7 @@ class Entity extends WorldObject {
         super(color, pos, null, createVector(1), createVector(), 2, 0.1)
         
         this.width = 10;
+        this.food = null;
 
         this.rays = [];
         for (var i = 0; i < fov; i += fov_dens) {
@@ -13,8 +14,31 @@ class Entity extends WorldObject {
         this.update_poly();
     }
 
-    update_poly() {
+    // Draw Method
+    show() {
+        noStroke();
+        fill(this.color);
+        push();
+        translate(this.pos.x, this.pos.y);
+        rotate(this.vel.heading());
+        triangle(
+            -this.width, -this.width/2,
+            -this.width, this.width/2, 
+            this.width/2, 0
+            );
+        pop();
+    }
 
+    // Update Methods
+    update(world_objects) {
+        this.update_pos();
+        this.update_poly();
+        this.update_vision(world_objects);
+        this.show();
+        this.wander();
+    }
+
+    update_poly() {
         const p1 = createVector(-this.width + this.pos.x, -this.width/2 + this.pos.y);
         const p2 = createVector(this.width/2 + this.pos.x, 0 + this.pos.y)
         const p3 = createVector(-this.width + this.pos.x, this.width/2 + this.pos.y);
@@ -26,59 +50,15 @@ class Entity extends WorldObject {
         ]
     }
 
-    apply_force(vector) {
-        let target_vect = this._get_vect_rel_pos(vector);
-        this._set_accel(target_vect);
-    }
-
-    update(world_objects) {
-        this.update_pos();
-        this.update_poly();
-        this.update_vision(world_objects);
-        this.show();
-    }
-
     //TODO: think of better naming schema for these movement parameters
     // feels clunky right now
     update_pos() {
-
         const current_pos = this._get_pos();
         this._set_vel();
         current_pos.add(this._get_vel())
         this._set_pos(current_pos);
         
         this._check_bounds();
-    }
-
-    check_for_closest_object(view_objs) {
-        
-        let closest_obj = null;
-        if (view_objs !== {}) {
-            for (const[, array] of Object.entries(view_objs)) {
-                if (closest_obj === null && array.length !== 0) closest_obj = array[0];
-                array.forEach((obj) => {
-                    if (this._get_vect_rel_mag(obj.pos) < this._get_vect_rel_mag(closest_obj.pos)) {
-                        closest_obj = obj;
-                    }
-                })   
-            }
-        }
-        return closest_obj;
-    }
-
-    check_for_closest_object_of_type(view_objs, type) {
-
-        let closest_obj = null
-        if (type in view_objs) {
-            const typed_objs = view_objs[type];
-            closest_obj = typed_objs[0];
-            typed_objs.forEach((obj) => {
-                if (this._get_vect_rel_mag(obj.pos) < this._get_vect_rel_mag(closest_obj.pos)) {
-                    closest_obj = obj;
-                }
-            })
-        }
-        return closest_obj;
     }
 
     update_vision(world_objects) {
@@ -96,22 +76,68 @@ class Entity extends WorldObject {
             }
         });
 
-        const closest_obj = this.check_for_closest_object_of_type(view_objs, "Food");
-        if (closest_obj) this.apply_force(closest_obj._get_pos());
+        return view_objs;
     }
 
-    show() {
-        noStroke();
-        fill(this.color);
-        push();
-        translate(this.pos.x, this.pos.y);
-        rotate(this.vel.heading());
-        triangle(
-            -this.width, -this.width/2,
-            -this.width, this.width/2, 
-            this.width/2, 0
-            );
-        pop();
+    // Object Parsing Methods
+    get_objects_of_type(view_objs, type) {
+        if (type in view_objs) return view_objs[type];
+        return null;
+    }
+
+    check_for_closest_object(view_objs) {
+        let closest_obj = null;
+        for (const[, array] of Object.entries(view_objs)) {
+            if (closest_obj === null && array.length !== 0) closest_obj = array[0];
+            array.forEach((obj) => {
+                if (this._get_vect_rel_mag(obj.pos) < this._get_vect_rel_mag(closest_obj.pos)) {
+                    closest_obj = obj;
+                }
+            })   
+        }
+        
+        return closest_obj;
+    }
+
+    check_for_closest_object_of_type(view_objs, type) {
+        let closest_obj = null
+        const typed_objs = this.get_objects_of_type(view_objs, type);
+        closest_obj = typed_objs[0];
+        typed_objs.forEach((obj) => {
+            if (this._get_vect_rel_mag(obj.pos) < this._get_vect_rel_mag(closest_obj.pos)) {
+                closest_obj = obj;
+            }
+        })
+        
+        return closest_obj;
+    }
+
+    // Movement Methods
+    apply_force(rel_vector) {
+        this._set_accel(rel_vector);
+    }
+
+    seek(vector) {
+        let target_vect = this._get_vect_rel_pos(vector);
+        this.apply_force(target_vect);
+    }
+
+    avoid(vector) {
+        let target_vect = this._get_vect_rel_pos(vector);
+        target_vect.mult(-1);
+        this.apply_force(target_vect);
+    }
+
+    //TODO: Could use some tweaking
+    wander() {
+        const random_angle = random(TWO_PI);
+        const new_dir = p5.Vector.fromAngle(random_angle,1).add(this.vel).limit(this.max_vel);
+        this.apply_force(new_dir);
+    }
+
+    // Behavioral
+    find_food() {
+
     }
 }
 
