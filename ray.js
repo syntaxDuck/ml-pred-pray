@@ -20,22 +20,6 @@ class Ray extends WorldObject{
         return obj_intersected;
     }
 
-    show(obj_intersected) {
-        stroke(this.color);
-        push();
-        // Set drawing origin to ray pos
-        // this is why when drawing the line we start at 0,0
-        translate(this.pos.x, this.pos.y);
-        if (obj_intersected) {
-            const obj_vect = obj_intersected._get_pos().sub(this.pos)
-            line(0, 0, obj_vect.x, obj_vect.y);
-        }
-        else {
-            line(0, 0, this.dir.x, this.dir.y);
-        }
-        pop();
-    }
-
     compare_obj_pos(current_obj, check_obj) {
         let current_obj_vect = current_obj._get_pos();
         let current_obj_mag = this._get_vect_rel_mag(current_obj_vect);
@@ -64,9 +48,6 @@ class Ray extends WorldObject{
 
         let closest_obj = null
         for (const [key,] of Object.entries(objects)) {
-            
-            // No reason to check for object of type parent
-            //if (parent.constructor.name.toLowerCase() === key) continue;
             
             // Loop over all objects of type
             objects[key].forEach((object) => {
@@ -145,5 +126,21 @@ class Ray extends WorldObject{
         //})
 //
         //return min_intersect
+    }
+
+    show(obj_intersected) {
+        stroke(this.color);
+        push();
+        // Set drawing origin to ray pos
+        // this is why when drawing the line we start at 0,0
+        translate(this.pos.x, this.pos.y);
+        if (obj_intersected) {
+            const obj_vect = obj_intersected._get_pos().sub(this.pos)
+            line(0, 0, obj_vect.x, obj_vect.y);
+        }
+        else {
+            line(0, 0, this.dir.x, this.dir.y);
+        }
+        pop();
     }
 }
