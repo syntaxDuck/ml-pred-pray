@@ -170,11 +170,8 @@ class Entity extends WorldObject {
         let target_pt = null;
         
         // Get an absolute vector of target pos plus it's velocity
-        if (obj.vel !== null) {
-            target_pt = obj._get_vel();
-            target_pt.add(obj.pos)
-        }
-        else target_pt = obj._get_pos();
+        target_pt = obj._get_vel();
+        target_pt.add(obj.pos)
 
         this.seek(target_pt);
     }

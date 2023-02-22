@@ -25,7 +25,7 @@ class World {
     }
     
     create_food() {
-        let food_count = 10;
+        let food_count = 1;
         let world_food = [];
 
         for(let i = 0; i < food_count; i++) {
@@ -72,6 +72,8 @@ class WorldObject {
     }
 
     _get_vel() {
+        // If vel is null return empty vector
+        if (this.vel === null) return createVector();
         return this.vel.copy();
     }
 
