@@ -3,14 +3,21 @@ class Entity extends WorldObject {
     constructor(pos, color, fov, fov_dens=1) {
         super(color, pos, null, createVector(1), createVector(), 2, 0.1)
         
+        // Perm state
         this.width = 10;
         this.food = null;
 
+        // Movement State
+        this.view_objs = {};
+        this.wander_theta = PI/2;
+
+        // Create vision cone
         this.rays = [];
         for (var i = 0; i < fov; i += fov_dens) {
             this.rays.push(new Ray(this.pos, radians(i-fov/2)));
         }
 
+        // Create initial poly
         this.update_poly();
     }
 
@@ -35,7 +42,6 @@ class Entity extends WorldObject {
         this.update_poly();
         this.update_vision(world_objects);
         this.show();
-        this.wander();
     }
 
     update_poly() {
@@ -50,15 +56,15 @@ class Entity extends WorldObject {
         ]
     }
 
-    //TODO: think of better naming schema for these movement parameters
-    // feels clunky right now
     update_pos() {
         const current_pos = this._get_pos();
-        this._set_vel();
         current_pos.add(this._get_vel())
         this._set_pos(current_pos);
         
         this._check_bounds();
+
+        const obj = this.check_for_closest_object();
+        this.persue(obj);
     }
 
     update_vision(world_objects) {
@@ -76,7 +82,7 @@ class Entity extends WorldObject {
             }
         });
 
-        return view_objs;
+        this.view_objs = view_objs;
     }
 
     // Object Parsing Methods
@@ -85,9 +91,9 @@ class Entity extends WorldObject {
         return null;
     }
 
-    check_for_closest_object(view_objs) {
+    check_for_closest_object() {
         let closest_obj = null;
-        for (const[, array] of Object.entries(view_objs)) {
+        for (const[, array] of Object.entries(this.view_objs)) {
             if (closest_obj === null && array.length !== 0) closest_obj = array[0];
             array.forEach((obj) => {
                 if (this._get_vect_rel_mag(obj.pos) < this._get_vect_rel_mag(closest_obj.pos)) {
@@ -99,9 +105,9 @@ class Entity extends WorldObject {
         return closest_obj;
     }
 
-    check_for_closest_object_of_type(view_objs, type) {
+    check_for_closest_object_of_type(type) {
         let closest_obj = null
-        const typed_objs = this.get_objects_of_type(view_objs, type);
+        const typed_objs = this.get_objects_of_type(this.view_objs, type);
         closest_obj = typed_objs[0];
         typed_objs.forEach((obj) => {
             if (this._get_vect_rel_mag(obj.pos) < this._get_vect_rel_mag(closest_obj.pos)) {
@@ -113,27 +119,67 @@ class Entity extends WorldObject {
     }
 
     // Movement Methods
+
+    // Apply steering force in the direction of the rel_vector
     apply_force(rel_vector) {
         this._set_accel(rel_vector);
+        this._set_vel()
     }
 
-    seek(vector) {
-        let target_vect = this._get_vect_rel_pos(vector);
+    // Takes an absolute vector and steers the entity towards it
+    seek(abs_vector) {
+        let target_vect = this._get_vect_rel_pos(abs_vector);
         this.apply_force(target_vect);
     }
 
-    avoid(vector) {
-        let target_vect = this._get_vect_rel_pos(vector);
+    // Takes an absolute vector and steers the entity away from it
+    avoid(abs_vector) {
+        let target_vect = this._get_vect_rel_pos(abs_vector);
         target_vect.mult(-1);
         this.apply_force(target_vect);
     }
 
-    //TODO: Could use some tweaking
     wander() {
-        const random_angle = random(TWO_PI);
-        const new_dir = p5.Vector.fromAngle(random_angle,1).add(this.vel).limit(this.max_vel);
-        this.apply_force(new_dir);
+        const wander_pt = this._get_vel();
+        wander_pt.setMag(100);
+        wander_pt.add(this.pos);
+
+        let wander_radius = 25;
+
+        let x = wander_radius * cos(this.wander_theta);
+        let y = wander_radius * sin(this.wander_theta);
+
+        wander_pt.add(x,y);
+
+        // Create relative point from entity
+        let target_pt = wander_pt.sub(this.pos);
+        this.apply_force(target_pt)
+
+        // Randomly select the angle that the wander point will be translated
+        // along the projected circle created by wander_radius
+        let displacement = 0.3;
+        this.wander_theta += random(-displacement, displacement);
     }
+
+    // NOTE: think this is working but needs some investigation
+    // need to decuple the behavior of pred and pray objects
+    persue(obj) {
+
+        if (obj === null) return;
+
+        let target_pt = null;
+        
+        // Get an absolute vector of target pos plus it's velocity
+        if (obj.vel !== null) {
+            target_pt = obj._get_vel();
+            target_pt.add(obj.pos)
+        }
+        else target_pt = obj._get_pos();
+
+        this.seek(target_pt);
+    }
+
+    evade(obj) {}
 
     // Behavioral
     find_food() {
