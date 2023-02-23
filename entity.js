@@ -1,7 +1,7 @@
 
 class Entity extends WorldObject {
     constructor(pos, color, fov, fov_dens=1) {
-        super(color, pos, null, createVector(1), createVector(), 2, 0.1)
+        super(color, pos, null, createVector(), createVector(), 2, 0.1)
         
         // Perm state
         this.width = 10;
@@ -70,7 +70,7 @@ class Entity extends WorldObject {
     update_vision(world_objects) {
         let view_objs = {};
         this.rays.forEach((ray) => {
-            let obj = ray.update(this,world_objects, true);
+            let obj = ray.update(this,world_objects, false);
             if (obj) {
                 const obj_type = obj.constructor.name;
                 if (obj_type in view_objs) {
@@ -128,15 +128,20 @@ class Entity extends WorldObject {
         this._set_accel(rel_vector);
         this._set_vel()
     }
-
+    
     // Takes an absolute vector and steers the entity towards it
-    seek(abs_vector) {
-        let target_vect = this._get_vect_rel_pos(abs_vector);
-        this.apply_force(target_vect);
+    seek(obj, abs_vector=obj._get_pos()) {
+
+        const distance = obj._get_vect_rel_mag(this.pos)
+        if (distance < obj.width) this.eat(obj);
+        else {
+            let target_vect = this._get_vect_rel_pos(abs_vector);
+            this.apply_force(target_vect);
+        }
     }
 
     // Takes an absolute vector and steers the entity away from it
-    avoid(abs_vector) {
+    avoid(obj, abs_vector) {
         let target_vect = this._get_vect_rel_pos(abs_vector);
         target_vect.mult(-1);
         this.apply_force(target_vect);
@@ -170,35 +175,26 @@ class Entity extends WorldObject {
 
         if (obj === null) return;
 
-        let target_pt = null;
-        
-        // Get an absolute vector of target pos plus it's projected pos
-        // through its velocity being extrapolated
-        //let ratio_obj_vel = obj._get_vel();
-        //if (ratio_obj_vel !== 0) {
-        //    ratio_obj_vel = ratio_obj_vel.mag() / this.vel.mag();
-        //}
-        //let project = ratio_obj_vel * (this.view_length - this._get_vect_rel_mag(obj.pos));
-        //console.log(project)
-        target_pt = obj._get_vel().mult(20);
+        let target_pt = obj._get_vel().mult(20);
         target_pt.add(obj.pos)
 
-        this.seek(target_pt);
+        this.seek(obj, target_pt);
     }
 
     evade(obj) {
+
         if (obj === null) return;
 
-        let target_pt = null;
-        target_pt = obj._get_vel().mult(-20);
+        let target_pt = obj._get_vel().mult(-20);
         target_pt.add(obj.pos)
 
-        this.avoid(target_pt);
+        this.avoid(obj, target_pt);
     }
 
     // Behavioral
-    find_food() {
-
+    eat(obj) {
+        obj._set_health(0);
+        this._set_health(100);
     }
 }
 
@@ -206,13 +202,17 @@ class Pray extends Entity {
     constructor(pos) {
         const color = 'green';
         const fov = 180;
-        const fov_dens = 1;
+        const fov_dens = 2;
         super(pos,color,fov,fov_dens);
     }
 
     update(world_objects) {
         this.update_entity(world_objects);
-        this.wander()
+        if ("Food" in this.view_objs) {
+            const obj = this.check_for_closest_object_of_type("Food");
+            if (obj) this.seek(obj);
+        }
+        else this.wander();
     }
 }
 
@@ -220,7 +220,7 @@ class Pred extends Entity {
     constructor(pos) {
         const color = 'red';
         const fov = 90;
-        const fov_dens = 1;
+        const fov_dens = 2;
         super(pos,color,fov,fov_dens);
     }
 
@@ -231,7 +231,9 @@ class Pred extends Entity {
             const obj = this.check_for_closest_object_of_type("Pray");
             if (obj) this.persue(obj);
         }
-        else this.wander();
+        else {
+            this.wander();
+        }
     }
 }
 
@@ -243,7 +245,7 @@ class entityFactory {
     create_pray(count) {
         let pray_array = [];
         for (let i = 0; i<count; i++) {
-            pray_array.push(new Pray(createVector(random(width/2), random(height/2))));
+            pray_array.push(new Pray(createVector(random(0,width*0.25), random(0,height*0.25))));
         }
 
         return pray_array;
@@ -252,7 +254,7 @@ class entityFactory {
     create_pred(count) {
         let pred_array = [];
         for (let i = 0; i<count; i++) {
-            pred_array.push(new Pred(createVector(random(width/2), random(height/2))));
+            pred_array.push(new Pred(createVector(random(width*0.75,width), random(height*0.75,height))));
         }
 
         return pred_array;
