@@ -1,21 +1,21 @@
 
 class Food extends WorldObject {
     constructor(pos) {
-        super('red', pos);
-        this.vert_length = 10;
+        super('white', pos);
+        this.width = 5;
         this.create_polys();
     }
 
     create_polys() {
 
         const p1 = createVector(
-            this.pos.x - this.vert_length/2, this.pos.y - this.vert_length/2);
+            this.pos.x - this.width/2, this.pos.y - this.width/2);
         const p2 = createVector(
-            this.pos.x - this.vert_length/2, this.pos.y + this.vert_length/2);
+            this.pos.x - this.width/2, this.pos.y + this.width/2);
         const p3 = createVector(
-            this.pos.x + this.vert_length/2, this.pos.y + this.vert_length/2);
+            this.pos.x + this.width/2, this.pos.y + this.width/2);
         const p4 = createVector(
-            this.pos.x + this.vert_length/2, this.pos.y - this.vert_length/2);
+            this.pos.x + this.width/2, this.pos.y - this.width/2);
 
         this.poly = [
             [p1, p2],
@@ -38,7 +38,7 @@ class Food extends WorldObject {
         stroke(this.color);
         push();
         translate(current_pos.x, current_pos.y);
-        rect(0,0,this.vert_length,this.vert_length);
+        rect(0,0,this.width,this.width);
         pop();
     }
 }
