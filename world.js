@@ -16,16 +16,26 @@ class World {
         }
     }
 
+    remove_object(key, array, target_obj) {
+        const new_array = array.filter((obj) => {
+            return obj !== target_obj;
+        })
+
+        this.world_objects[key] = new_array;
+    }
+
     update_objects() {
         for (const [key, array] of Object.entries(this.world_objects)){
             array.forEach((object) => {
-                object.update(this.world_objects);
+
+                if (object.health <= 0) this.remove_object(key, array, object)
+                else object.update(this.world_objects);
             });
         }
     }
     
     create_food() {
-        let food_count = 1;
+        let food_count = 10;
         let world_food = [];
 
         for(let i = 0; i < food_count; i++) {
@@ -44,15 +54,30 @@ class World {
 class WorldObject {
     constructor(color, pos, dir=null, vel=null, accel=null, max_vel=0, max_accel=0) {
 
+        // Features
         this.color = color;
         
+        // Movement state
         this.pos = pos;
         this.dir = dir;
         this.vel = vel;
         this.accel = accel;
 
+        // Movement constraints
         this.max_vel = max_vel;
         this.max_accel = max_accel;
+
+        // Status State
+        this.health = 100;
+        this.energy = 100;
+    }
+
+    _get_health() {
+        return this.health;
+    }
+
+    _set_health(health) {
+        this.health = health
     }
 
     _get_pos() {

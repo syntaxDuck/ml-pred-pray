@@ -12,9 +12,10 @@ class Entity extends WorldObject {
         this.wander_theta = PI/2;
 
         // Create vision cone
+        this.view_length = 300;
         this.rays = [];
         for (var i = 0; i < fov; i += fov_dens) {
-            this.rays.push(new Ray(this.pos, radians(i-fov/2)));
+            this.rays.push(new Ray(this.pos, radians(i-fov/2), this.view_length));
         }
 
         // Create initial poly
@@ -37,11 +38,14 @@ class Entity extends WorldObject {
     }
 
     // Update Methods
-    update(world_objects) {
+    update_entity(world_objects) {
         this.update_pos();
         this.update_poly();
         this.update_vision(world_objects);
         this.show();
+
+        // entity decays if it doesn't eat
+        this.health -= 0.1;
     }
 
     update_poly() {
@@ -60,11 +64,7 @@ class Entity extends WorldObject {
         const current_pos = this._get_pos();
         current_pos.add(this._get_vel())
         this._set_pos(current_pos);
-        
         this._check_bounds();
-
-        const obj = this.check_for_closest_object();
-        this.persue(obj);
     }
 
     update_vision(world_objects) {
@@ -108,6 +108,9 @@ class Entity extends WorldObject {
     check_for_closest_object_of_type(type) {
         let closest_obj = null
         const typed_objs = this.get_objects_of_type(this.view_objs, type);
+
+        if (typed_objs === null) return
+
         closest_obj = typed_objs[0];
         typed_objs.forEach((obj) => {
             if (this._get_vect_rel_mag(obj.pos) < this._get_vect_rel_mag(closest_obj.pos)) {
@@ -162,21 +165,36 @@ class Entity extends WorldObject {
     }
 
     // NOTE: think this is working but needs some investigation
-    // need to decuple the behavior of pred and pray objects
+    // need to decuple the behavior of pred and pray objects and fix the projection calculation
     persue(obj) {
 
         if (obj === null) return;
 
         let target_pt = null;
         
-        // Get an absolute vector of target pos plus it's velocity
-        target_pt = obj._get_vel();
+        // Get an absolute vector of target pos plus it's projected pos
+        // through its velocity being extrapolated
+        //let ratio_obj_vel = obj._get_vel();
+        //if (ratio_obj_vel !== 0) {
+        //    ratio_obj_vel = ratio_obj_vel.mag() / this.vel.mag();
+        //}
+        //let project = ratio_obj_vel * (this.view_length - this._get_vect_rel_mag(obj.pos));
+        //console.log(project)
+        target_pt = obj._get_vel().mult(20);
         target_pt.add(obj.pos)
 
         this.seek(target_pt);
     }
 
-    evade(obj) {}
+    evade(obj) {
+        if (obj === null) return;
+
+        let target_pt = null;
+        target_pt = obj._get_vel().mult(-20);
+        target_pt.add(obj.pos)
+
+        this.avoid(target_pt);
+    }
 
     // Behavioral
     find_food() {
@@ -191,6 +209,11 @@ class Pray extends Entity {
         const fov_dens = 1;
         super(pos,color,fov,fov_dens);
     }
+
+    update(world_objects) {
+        this.update_entity(world_objects);
+        this.wander()
+    }
 }
 
 class Pred extends Entity {
@@ -199,6 +222,16 @@ class Pred extends Entity {
         const fov = 90;
         const fov_dens = 1;
         super(pos,color,fov,fov_dens);
+    }
+
+    update(world_objects) {
+        this.update_entity(world_objects);
+
+        if ("Pray" in this.view_objs) {
+            const obj = this.check_for_closest_object_of_type("Pray");
+            if (obj) this.persue(obj);
+        }
+        else this.wander();
     }
 }
 
