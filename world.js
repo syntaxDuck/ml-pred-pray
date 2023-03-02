@@ -4,7 +4,8 @@ class World {
         this.y = height;
         this.world_objects = {};
 
-        this.create_food();
+        this.best_pray = null;
+        this.best_pred = null;
     }
 
     add_objects(entity_name, entity_array) {
@@ -27,18 +28,28 @@ class World {
     update_objects() {
         for (const [key, array] of Object.entries(this.world_objects)){
             array.forEach((object) => {
-
                 if (object.health <= 0) this.remove_object(key, array, object)
                 else object.update(this.world_objects);
             });
         }
+
+        const pray_left = this.world_objects["pray"].length;
+        const pred_left = this.world_objects["pred"].length;
+        if (!this.best_pray && pray_left <= 4) {
+            this.best_pray = this.world_objects["pray"];
+            console.log(this.best_pray);
+        }
+
+        if (!this.best_pred && pred_left <= 4) {
+            this.best_pred = this.world_objects["pred"];
+            console.log(this.best_pred);
+        }
     }
     
-    create_food() {
-        let food_count = 10;
+    create_food(count) {
         let world_food = [];
 
-        for(let i = 0; i < food_count; i++) {
+        for(let i = 0; i < count; i++) {
             let food = new Food(createVector(random(width), random(height)));
             world_food.push(food);
         }
