@@ -11,6 +11,9 @@ class Entity extends WorldObject {
         this.view_objs = {};
         this.wander_theta = PI/2;
 
+        // Updated State
+        this.ate_count = 0;
+
         // Create vision cone
         this.view_length = 300;
         this.rays = [];
@@ -171,7 +174,7 @@ class Entity extends WorldObject {
 
     // NOTE: think this is working but needs some investigation
     // need to decuple the behavior of pred and pray objects and fix the projection calculation
-    persue(obj) {
+    pursue(obj) {
 
         if (obj === null) return;
 
@@ -195,6 +198,7 @@ class Entity extends WorldObject {
     eat(obj) {
         obj._set_health(0);
         this._set_health(100);
+        this.ate_count += 1;
     }
 }
 
@@ -229,7 +233,7 @@ class Pred extends Entity {
 
         if ("Pray" in this.view_objs) {
             const obj = this.check_for_closest_object_of_type("Pray");
-            if (obj) this.persue(obj);
+            if (obj) this.pursue(obj);
         }
         else {
             this.wander();
