@@ -41,4 +41,15 @@ class Food extends WorldObject {
         rect(0,0,this.width,this.width);
         pop();
     }
+
+    static create_food(count) {
+        let food_array = [];
+
+        for(let i = 0; i < count; i++) {
+            let food = new Food(createVector(random(width), random(height)));
+            food_array.push(food);
+        }
+
+        return food_array;
+    }
 }
