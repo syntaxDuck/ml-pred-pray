@@ -1,56 +1,78 @@
 # Predator vs Prey Simulation
 
-An evolutionary simulation built with p5.js featuring autonomous agents with vision-based decision making.
+![Simulation](assets/simulation.gif)
+
+An evolutionary predator-prey simulation built with p5.js and TypeScript, featuring autonomous agents with ray-casting vision and genetic algorithm-based evolution.
 
 ## Overview
 
-This simulation models predator-prey dynamics using entities with ray-casting vision systems. The system demonstrates emergent behaviors as prey seek food while evading predators, and predators hunt prey.
+This simulation models predator-prey dynamics where prey seek food while evading predators, and predators hunt prey. Entities evolve over generations using tournament selection, with fitness based on survival time and resource acquisition.
 
 ## Features
 
 - **Vision System**: Ray-casting algorithm allows entities to detect objects within their field of view
-- **Prey (Green)**: Seek food sources to survive and maintain health
-- **Predators (Red)**: Hunt prey using pursuit behaviors
+- **Genetic Evolution**: Entities evolve traits like FOV angle, view distance, max speed, and behavioral weights
+- **Prey (Green)**: Seek food sources, flee from predators, evolve survival traits
+- **Predators (Red)**: Hunt prey using pursuit behaviors, evolve hunting efficiency
 - **Health System**: Entities lose health over time and must eat to survive
-- **Wrap-around World**: Entities can traverse screen edges seamlessly
+- **Generation System**: Populations evolve using tournament selection with mutation
+- **Fitness Tracking**: Based on time alive, food eaten, and prey caught
 
 ## Running the Simulation
 
-Open `index.html` in a web browser. The simulation uses p5.js loaded via CDN.
+```bash
+npm install
+npm run dev
+```
+
+Open http://localhost:3000 in your browser.
+
+## Controls
+
+| Key | Action |
+|-----|--------|
+| D | Toggle debug mode (shows vision rays) |
+| P | Pause/Resume simulation |
+| N | Next generation (manual) |
+| R | Reset simulation |
+
+## Genome System
+
+Each entity has a genome controlling behavior through these genes:
+
+| Gene | Description |
+|------|-------------|
+| `fovAngle` | Field of view angle (30-360°) |
+| `viewDistance` | How far entity can see (100-500) |
+| `maxSpeed` | Maximum velocity (1-4) |
+| `maxForce` | Steering force limit (0.05-0.3) |
+| `wanderWeight` | Importance of wandering |
+| `seekWeight` | Importance of seeking targets |
+| `fleeWeight` | Importance of fleeing (prey) |
+| `huntWeight` | Importance of hunting (predators) |
 
 ## Configuration
 
-Edit `main.js` to adjust simulation parameters:
+Edit `src/config.ts` to adjust simulation parameters:
 
-```javascript
-const entity_count = 12;  // Number of predators and prey
-const food_count = 100;   // Number of food sources
-```
-
-## Entity Behaviors
-
-### Prey
-- 180° field of view
-- Seeks nearest food source when visible
-- Wanders randomly when no food detected
-
-### Predators
-- 90° field of view
-- Pursues nearest prey when visible
-- Wanders randomly when no prey detected
+- Population sizes (prey: 20, predators: 6)
+- Food regeneration (80 initial, regenerates every 30 frames)
+- Generation duration (2400 frames)
+- Mutation rate (15%)
 
 ## Architecture
 
 | File | Description |
 |------|-------------|
-| `main.js` | Entry point, p5.js setup and draw loop |
-| `world.js` | World container and base object class |
-| `entity.js` | Entity classes (Pray, Pred) with behaviors |
-| `ray.js` | Ray-casting vision system |
-| `food.js` | Food source objects |
+| `src/main.ts` | Entry point, p5.js setup() and draw() loop |
+| `src/world.ts` | World container and generation management |
+| `src/entity.ts` | Entity classes (Pray, Pred) with behaviors |
+| `src/ray.ts` | Ray-casting vision system |
+| `src/food.ts` | Food source objects |
+| `src/genome.ts` | Genome class for genetic evolution |
+| `src/generation.ts` | Generation manager with tournament selection |
+| `src/config.ts` | Configuration constants |
 
 ## Future Improvements
 
-- Genetic algorithm for evolving neural network brains
-- Reproduction and fitness-based selection
-- Performance optimization for larger populations
+- [ ] Neural network approach for brain (simple perceptron)
